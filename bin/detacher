@@ -7,7 +7,6 @@ printUsage() {
 Usage:
   deacher
     -v <Volume name or ID>
-    -c <cluster orchestrator> [k8s|dcos|docker|nomad]
 EOUSAGE
   echo "Example: detacher -v mytestvol"
 }
@@ -19,15 +18,13 @@ genDiags() {
   echo "[INFO]: Please send along /var/cores/diags.tar.gz and /var/cores/core* to Portworx Support"
 }
 
-while getopts "h?:v:c:" opt; do
+while getopts "h?:v:" opt; do
     case "$opt" in
     h|\?)
         printUsage
         exit 0
         ;;
     v)  VOLUME=$OPTARG
-        ;;
-    c)  ORCH=$OPTARG
         ;;
     :)
         echo "[ERROR] Option -$OPTARG requires an argument." >&2
@@ -40,15 +37,8 @@ while getopts "h?:v:c:" opt; do
 done
 
 # Validate Input Args
-if [[ (-z ${VOLUME}) || (-z ${ORCH}) ]]; then
+if [[ (-z ${VOLUME}) ]]; then
     echo "[ERROR]: Required arguments missing"
-    printUsage
-    exit 1
-fi
-
-# Validate orchestrator
-if [[ (${ORCH} != 'k8s') && (${ORCH} != 'dcos') && (${ORCH} != 'docker') && (${ORCH} != 'nomad') ]]; then
-    echo "[ERROR]: Invalid orchestrator specified. Please check usage for valid options"
     printUsage
     exit 1
 fi
@@ -84,35 +74,23 @@ fi
 
 VOLID=`${PXCTL} v i ${VOLUME} | grep Volume | awk '{print $3}'`
 
-# Dump diags
-genDiags
-
 # Get the mounts
 MOUNTPT=`mount | grep ${VOLUME}`
-if [ ! -z ${MOUNTPT} ]; then
+if [[ ! -z ${MOUNTPT} ]; then
     echo "[INFO]: Volume appars mounted"
     echo "${MOUNTPT}"
     #echo "Please Unmount and detach the volume"
     #exit 0
 fi
 
-# Check the process holding on to the volume
-VOL_IGNORE='/var/lib/osd/mounts'
-if [[ (${ORCH} == 'k8s') ]]; then
-    VOL_IGNORE='/var/lib/kubelet'
-fi
+#pid=$(find /proc -name mounts | xargs grep ${VOLID} -s | grep -v /var/lib/kubelet | grep -v /var/lib/osd/mounts | grep -v pxmounts | head -n 1
+pid=$(find /proc -name mounts | xargs grep ${VOLID} -s | grep -v /var/lib/kubelet | grep -v /var/lib/osd/mounts | grep -v pxmounts | head -n 1 | awk -F'/' '{print $3}')
 
-pid=$(find /proc -name mounts | xargs grep ${VOLID} -s | grep -v ${VOL_IGNORE} | grep -v pxmounts | head -n 1 | awk -F'\' '{print $3}')
 if [ ! -z ${pid} ]; then
     echo "[INFO]: found ${pid} using the volume ${VOLID}"
     cat /proc/${pid}/cmdline
-    if [[ (${ORCH} == 'k8s') ]]; then
-        user=$(cat /proc/${pid}/cgroup | head -n 1 | awk -F'/' '{print $4}')
-        echo "[INFO]: pod using the volume: ${user}"
-    else
-        user=$(cat /proc/${pid}/cgroup | head -n 1 | awk -F'/' '{print $3}')
-        echo "[INFO]: container using the volume: ${user}"
-    fi
+    user=$(cat /proc/${pid}/cgroup | head -n 1)
+    echo "[INFO]: pod using the volume: ${user}"
     echo "[INFO]: Please stop the container/ pod before detaching the volume"
     exit 0
 fi
@@ -128,6 +106,8 @@ echo "[INFO]: currently ${WRITE_REQ} write requests inflight on ${VOLID}"
 
 if [[ (${READ_REQ} -ne 0) || (${WRITE_REQ} -ne 0) ]]; then
     echo "[ERROR]: Aborting since there are IOs inflight"
+    # Dump diags
+    genDiags
     exit 1
 fi
 
