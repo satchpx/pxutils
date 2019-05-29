@@ -84,13 +84,14 @@ if [[ ! -z ${MOUNTPT} ]; then
 fi
 
 #pid=$(find /proc -name mounts | xargs grep ${VOLID} -s | grep -v /var/lib/kubelet | grep -v /var/lib/osd/mounts | grep -v pxmounts | head -n 1
-pid=$(find /proc -name mounts | xargs grep ${VOLID} -s | grep -v /var/lib/kubelet | grep -v /var/lib/osd/mounts | grep -v pxmounts | head -n 1 | awk -F'/' '{print $3}')
+pid=$(find /proc -name mounts | xargs grep ${VOLID} 2>/dev/null | grep -v '/var/lib/kubelet\|/var/lib/osd/mounts\|pxmounts' | head -n 1 | awk -F'/' '{print $3}')
 
 if [ ! -z ${pid} ]; then
-    echo "[INFO]: found ${pid} using the volume ${VOLID}"
-    cat /proc/${pid}/cmdline
+    echo "[INFO]: found process with ID ${pid} using the volume ${VOLID}"
+    echo "[INFO]: Here's the cmdline for the pid ${pid}"
+    cat /proc/${pid}/cmdline && echo
     user=$(cat /proc/${pid}/cgroup | head -n 1)
-    echo "[INFO]: pod using the volume: ${user}"
+    echo "[INFO]: container using the volume: ${user}"
     echo "[INFO]: Please stop the container/ pod before detaching the volume"
     exit 0
 fi
