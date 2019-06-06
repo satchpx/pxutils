@@ -5,10 +5,10 @@ PXCTL='/opt/pwx/bin/pxctl'
 printUsage() {
   cat <<EOUSAGE
 Usage:
-  deacher
+  findproc 
     -v <Volume name or ID>
 EOUSAGE
-  echo "Example: detacher -v mytestvol"
+  echo "Example: findproc -v mytestvol"
 }
 
 genDiags() {
