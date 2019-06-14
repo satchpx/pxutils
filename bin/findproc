@@ -63,7 +63,7 @@ for node in $(${PXCTL} v i ${VOLUME} | grep Node | awk '{print $3}'); do
     if [[ (${MY_IP} == ${node}) ]]; then
         echo "[INFO]: Running on node ${MY_IP}. Volume replica exists on this node."
         # Simply dump diags and exit
-        genDiags
+        #genDiags
     fi
 done
 
@@ -76,7 +76,7 @@ VOLID=`${PXCTL} v i ${VOLUME} | grep Volume | awk '{print $3}'`
 
 # Get the mounts
 MOUNTPT=`mount | grep ${VOLUME}`
-if [[ ! -z ${MOUNTPT} ]; then
+if [[ ! -z ${MOUNTPT} ]]; then
     echo "[INFO]: Volume appars mounted"
     echo "${MOUNTPT}"
     #echo "Please Unmount and detach the volume"
