@@ -59,13 +59,13 @@ if [[ (${VOL_HA} -ne ${NUM_NODES}) ]]; then
     echo "[ERROR]: Current replca set does not satisfy the configured HA level"
 fi
 
-for node in $(${PXCTL} v i ${VOLUME} | grep Node | awk '{print $3}'); do
-    if [[ (${MY_IP} == ${node}) ]]; then
-        echo "[INFO]: Running on node ${MY_IP}. Volume replica exists on this node."
-        # Simply dump diags and exit
-        #genDiags
-    fi
-done
+#for node in $(${PXCTL} v i ${VOLUME} | grep Node | awk '{print $3}'); do
+#    if [[ (${MY_IP} == ${node}) ]]; then
+#        echo "[INFO]: Running on node ${MY_IP}. Volume replica exists on this node."
+#        # Simply dump diags and exit
+#        #genDiags
+#    fi
+#done
 
 if [[ (${CLNT_NODE} == 'false') ]]; then
     # Nothing to do here. Exit
