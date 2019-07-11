@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+# This script will run fio for the following list of I/O profiles and R/W block sizes
+ioprofiles=(read randread write randwrite randrw)
+rwblksizes=(8 16 32 64 128 256 512 1k 4k 16k 32k 64k 128k 256k 512k)
+
+OUTDIR="/tmp/fio-results"
+eval "mkdir -p $OUTDIR"
+if [ $? -ne 0 ]; then
+    echo "[ERROR]: Failed to create $OUTDIR"
+    exit 1
+fi
+
+# For an effective test of the I/O profile the total read/write size should be
+# at least twice the size of RAM
+ramsize=`cat /proc/meminfo | grep MemTotal | awk '{print $2}'`
+rwsize=$((2 *$ramsize/1024/1024))
+for profile in ${ioprofiles[@]}; do
+    for blksize in ${rwblksizes[@]}; do
+        # Run fio
+        fio --name=fio_${profile}_${blksize} --iodepth=8 --rw=$profile --bs=$blksize --size=${rwsize}G --output=${OUTDIR}/fio_${profile}_${blksize}.log
+    done
+done
+
+eval "cd /tmp && tar -cvfz fio-results.tar.gz fio-results/"
